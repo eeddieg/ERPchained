@@ -1,0 +1,9 @@
+sudo docker-compose up
+sudo docker-compose ps
+sudo docker-compose down
+
+sudo docker exec -it mysql-1 bash
+cd docker-entrypoint-initdb.d
+mysql -uuser -puser
+source data.sql
+

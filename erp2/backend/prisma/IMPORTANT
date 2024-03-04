@@ -1,0 +1,10 @@
+run 
+npx prisma migrate dev --create-only
+
+then in prisma/migrations/xxxxxxxxx/migration.sql add at the end
+
+-- Change Autostart starting value
+ALTER TABLE `Customer` AUTO_INCREMENT=2001;
+
+Then, to seed the DB, run
+npm run dbReset

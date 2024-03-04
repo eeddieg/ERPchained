@@ -1,0 +1,141 @@
+version: "2"
+services:
+  # Blockchain
+  blockchain-api:
+    build: ./blockchain-test/backend
+    container_name: blockchain
+    ports:
+      - 3001:3001
+      - 8545:8545
+    # network_mode: host
+    volumes:
+      - ./blockchain-test/backend:/home/node/app
+    networks:
+      blockchain-tier:
+        ipv4_address: 192.168.11.2
+  #
+  # Company_A
+  # Database
+  mysql-1:
+    image: mysql:8    
+    container_name: mysql-db-1
+    restart: always
+    command: --default-authentication-plugin=caching_sha2_password
+    environment:
+      MYSQL_ROOT_PASSWORD: super_duper_password
+      MYSQL_DATABASE: backend
+      MYSQL_USER: user
+      MYSQL_PASSWORD: user
+      MYSQL_TCP_PORT: 3307
+    ports:
+      - 3307:3307
+    depends_on:
+      - blockchain-api
+    volumes:
+      - ./erp1/sqlserver:/docker-entrypoint-initdb.d
+    networks:
+      backend-tier:
+        ipv4_address: 192.168.10.2
+  # Backend
+  backend-api-1:
+    build: ./erp1/backend
+    container_name: backend-1
+    # restart: unless-stopped
+    ports:
+      - 4001:3000
+    volumes:
+      - ./erp1/backend/:/backend
+    depends_on:
+      - mysql-1
+      - blockchain-api
+    # links:
+    #   - mysql
+    networks:
+      backend-tier:
+        ipv4_address: 192.168.10.3
+  # Frontend
+  frontend-1:
+    build: ./erp1/frontend
+    container_name: frontend-1
+    ports:
+      - 8081:8080
+    volumes:
+      - ./erp1/frontend:/app
+    links:
+      - mysql-1
+      - backend-api-1
+      - blockchain-api
+    networks:
+      backend-tier:
+        ipv4_address: 192.168.10.4
+  #
+  # # Company_B
+  # # Database
+  # mysql-2:
+  #   image: mysql:8    
+  #   container_name: mysql-db-2
+  #   restart: always
+  #   command: --default-authentication-plugin=caching_sha2_password
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: super_duper_password
+  #     MYSQL_DATABASE: backend
+  #     MYSQL_USER: user
+  #     MYSQL_PASSWORD: user
+  #     MYSQL_TCP_PORT: 3308
+  #   ports:
+  #     - 3308:3308
+  #   depends_on:
+  #     - blockchain-api
+  #   volumes:
+  #     - ./erp2/sqlserver:/docker-entrypoint-initdb.d
+  #   networks:
+  #     backend-tier:
+  #       ipv4_address: 192.168.10.12
+  # # Backend
+  # backend-api-2:
+  #   build: ./erp2/backend
+  #   container_name: backend-2
+  #   # restart: unless-stopped
+  #   ports:
+  #     - 4002:3000
+  #   volumes:
+  #     - ./erp2/backend/:/backend
+  #   depends_on:
+  #     - mysql-2
+  #     - blockchain-api
+  #   # links:
+  #   #   - mysql
+  #   networks:
+  #     backend-tier:
+  #       ipv4_address: 192.168.10.13
+  # # Frontend
+  # frontend-2:
+  #   build: ./erp2/frontend
+  #   container_name: frontend-2
+  #   ports:
+  #     - 8082:8080
+  #   volumes:
+  #     - ./erp2/frontend:/app
+  #   links:
+  #     - mysql-2
+  #     - backend-api-2
+  #     - blockchain-api
+  #   networks:
+  #     backend-tier:
+  #       ipv4_address: 192.168.10.14
+# Docker Networks
+networks:
+  backend-tier:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: "192.168.10.0/24"
+          gateway: "192.168.10.1"
+  blockchain-tier:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: "192.168.11.0/29"
+          gateway: "192.168.11.1"

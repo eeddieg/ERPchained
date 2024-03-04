@@ -1,0 +1,127 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  firstName    String?
+  lastName     String?
+  email        String   @unique
+  password     String
+  role         UserRole @default(USER)
+  refreshToken String   @db.VarChar(255)
+  mfaId        Int?
+  address      String?
+  mfa          MFA?
+}
+
+model MFA {
+  id         Int     @id @default(autoincrement())
+  userId     Int     @unique
+  status     Boolean
+  verified   Boolean
+  ascii      String  @db.VarChar(255)
+  hex        String  @db.VarChar(255)
+  base32     String  @db.VarChar(255)
+  otpAuthUrl String  @db.VarChar(255)
+  qr         String  @db.Text
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AvailableBlockchainAddress {
+  id         Int                        @id @default(autoincrement())
+  address    String                     @unique @db.VarChar(255)
+  assignAddr AssignedBlockchainAddress?
+}
+
+model AssignedBlockchainAddress {
+  id      Int                        @id @default(autoincrement())
+  address String                     @unique
+  email   String                     @unique
+  avblAdr AvailableBlockchainAddress @relation(fields: [address], references: [address], onDelete: Cascade)
+}
+
+model Customer {
+  id        Int        @id @default(autoincrement())
+  name      String?
+  email     String?    @unique
+  address   String?    @unique
+  inventory Inventory?
+  order     Order[]
+}
+
+model Inventory {
+  id         Int        @id @default(autoincrement())
+  customerId Int        @unique
+  customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  resources  Resource[]
+}
+
+model Resource {
+  id          Int       @id @default(autoincrement())
+  inventoryId Int
+  orderId     Int
+  title       Product   @default(WHEAT)
+  amount      Int
+  inventory   Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([inventoryId], map: "Resource_inventoryId_fkey")
+  @@index([orderId], map: "Resource_orderId_fkey")
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  customerId  Int
+  createdAt   DateTime    @default(now())
+  deliveredAt DateTime?
+  type        OrderType
+  status      OrderStatus @default(PLACED)
+  customer    Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  transaction Receipt?
+  list        Resource[]
+
+  @@index([customerId], map: "Order_customerId_fkey")
+}
+
+model Receipt {
+  id          Int    @id @default(autoincrement())
+  orderId     Int    @unique
+  to          String
+  from        String
+  blockHash   String
+  blockNumber Int
+  status      Int
+  hash        String @unique
+  order       Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+enum OrderStatus {
+  PLACED
+  PROCESS
+  COMPLETED
+  CANCELED
+}
+
+enum OrderType {
+  INCOMING
+  OUTCOMING
+}
+
+enum Product {
+  WHEAT
+  FLOUR
+  BREAD
+}
+
+enum UserRole {
+  ADMIN
+  MODERATOR
+  USER
+}

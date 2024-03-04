@@ -1,0 +1,1 @@
+{"name":"Company_C","reservedResources":0,"availableResources":2746}

@@ -1,0 +1,20 @@
+enrollCustomerToBc
+-======================-
+BC: order/registerCustomer
+OrderController: 
+const payload = {
+  address: req.body.address as string,
+  id: id as string,
+  name: req.body.name as string,
+  email: req.body.email as string,
+  company: company as string,
+};
+
+TableCustomer -> loop()
+
+storeCustomerTo BC/Db
+-======================-
+
+updateCompanyResourcesOnBc
+-=============================-
+BC: /company/updateResources

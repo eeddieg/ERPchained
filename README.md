@@ -1,7 +1,7 @@
 # DOCKER
 
-ro start the demo, type: 
+To start the demo, type: 
 docker compose up
 
-To stop running instances:
+To stop the running instances:
 docker compose down
